@@ -27,7 +27,7 @@ const int dirXPin = 5;
 const int servoPin = 6;  
 int xlocation = 0;
 int ylocation = 0;
-int pos = 0;    // variable to store the servo position
+int pos = 0;    // stores the servo position
 const byte address[6] = "00001"; //for radio
 int control[4]; // radio message. x, y, btn1, btn2
 
@@ -36,23 +36,17 @@ char* dispmessage = ""; // to display on LCD
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(LED_NUM, LEDs, NEO_GRB + NEO_KHZ800);
 Adafruit_PWMServoDriver pca9685 = Adafruit_PWMServoDriver(0x40);//object to represent PCA9685 at default I2C address  (0x40, more extensions up to 0x60)
 LiquidCrystal_I2C lcd(0x27, 16, 2); // on 0x27 i2c address, 16 by 2
-Servo myservo;  // create servo object to control a servo
+Servo myservo;  
 RF24 radio(9,10);  // create an RF24 object. CE, CSN
 
 
 Penyx::Penyx(int speed) {
   this->speed = speed; //assign motors speed
-  init();
 }
-void Penyx::init() {
-  Serial.begin(115200);       
-  Serial.println("Init");
-  Serial.println(speed);
 
-}
 void Penyx::begin() {
   Serial.begin(115200);       
-  Serial.println("begin");
+  Serial.println("Penyx Initiated");
   pinMode (LEDs,OUTPUT);
   pinMode(stepYPin,OUTPUT); 
   pinMode(dirYPin,OUTPUT);
@@ -89,7 +83,7 @@ void Penyx::begin() {
 }
 
 
-void Penyx::xy(int x, int y, bool pen) { //steps to each side, pen up = False
+void Penyx::dxdy(int x, int y, bool pen) { //steps to each side, pen up = False
  
   Serial.println("xy activated");
   Serial.print("Delta X =");
@@ -167,7 +161,7 @@ void Penyx::xy(int x, int y, bool pen) { //steps to each side, pen up = False
    
 }
 
-void Penyx::gotogrid(int x, int y, bool pen) { //setpoint to grid location X, Y. pen up = False
+void Penyx::absxy(int x, int y, bool pen) { //setpoint to grid location X, Y. pen up = False
  
   Serial.println("gotogrid activated!");
   Serial.print("Absolute X =");
@@ -247,13 +241,6 @@ void Penyx::gotogrid(int x, int y, bool pen) { //setpoint to grid location X, Y.
    
 }
 
-
-
-
-
-
-
-
 void Penyx::pendown () {
    Serial.println("Pen Down");
    lcd.setCursor(11, 1);
@@ -296,7 +283,7 @@ void Penyx::checkradio() {
     Serial.print(control[2]);  
     Serial.print("  ");    
     Serial.println(control[3]);  
-    gotogrid(control[0], control[1], control[2] or control[3]);
+    absxy(control[0], control[1], control[2] or control[3]);
   }
  // else {Serial.println("no radio available");}  
 }
