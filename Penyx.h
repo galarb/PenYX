@@ -1,15 +1,6 @@
 #ifndef PENYX_H
 #define PENYX_H
 
- #include <Arduino.h>
- #include <config.h>
- #include <Adafruit_PWMServoDriver.h>
- #include <Wire.h>
- #include <Adafruit_NeoPixel.h>
- #include <LiquidCrystal_I2C.h>
- #include <SPI.h>
- #include <nRF24L01.h>
- #include <RF24.h>
 
   void stripled(int lednum, int red, int green, int blue);
   void neopixels(int red, int green, int blue);
@@ -19,16 +10,20 @@
   
   private:
    // byte pin;
-  void penup();
-  void pendown();  
-
+  
+  int speed = 500;
   public:
-    Penyx(); //Calls init()
+    Penyx(int speed); //Calls init()
     void init();
     void begin();    
-    void xy(int x, int y, bool dir);
-    void display(const char*);
-      
+    void xy(int x, int y, bool pen); //command to move Penyx to a grid location
+    void gotogrid(int x, int y, bool pen);
+    void display(const char*); // print to lcd
+    int locx(); // returns the current X location
+    int locy(); // returns the current Y location
+    void checkradio(); //periodically checks the radio buffer, and executed the location command if any
+    void penup();
+    void pendown();  
  };
 
 #endif 
