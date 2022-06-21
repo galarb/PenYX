@@ -28,9 +28,9 @@ by gal arbel
  #include <nRF24L01.h>
  #include <RF24.h>
  #include <Servo.h>
-const int stepXPin = 2; 
+const int stepXPin = 4; 
 const int stepYPin = 3; 
-const int dirXPin = 5; 
+const int dirXPin = 7; 
 const int dirYPin = 6;  
 const int servoPin = 10;  
 
