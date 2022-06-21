@@ -7,7 +7,7 @@
     int speed = 500;
   public:
     Penyx(int speed); 
-    void begin();    
+    void begin();    //must be called during setup()
     void dxdy(int x, int y, bool pen); //delta X, delta Y, 
     void absxy(int x, int y, bool pen);//absolute grid location
     void display(const char*); // print to Penyx lcd
