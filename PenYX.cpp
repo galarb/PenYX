@@ -1,4 +1,5 @@
 /* cpp code for PenYX library
+v2.1.1
 
 speed sets the motors control pulses width in uS. typ 300-4000.
 the Radio is connected to Default SPI Pins: CLK, MOSI, MISO = 13, 11, 12
