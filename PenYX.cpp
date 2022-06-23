@@ -1,5 +1,5 @@
 /* cpp code for PenYX library
-v2.1.1
+v2.1.2
 
 speed sets the motors control pulses width in uS. typ 300-4000.
 the Radio is connected to Default SPI Pins: CLK, MOSI, MISO = 13, 11, 12
@@ -42,7 +42,7 @@ const byte address[6] = "00001"; //for radio
 int control[4]; // radio message. x, y, btn1, btn2
 char* dispmessage = ""; // to display on LCD
 
-//LiquidCrystal_I2C lcd(0x27, 16, 2); // on 0x27 i2c address, 16 by 2
+LiquidCrystal_I2C lcd(0x27, 16, 2); // on 0x27 i2c address, 16 by 2
 Servo myservo;  
 RF24 radio(8, 9);  // create an RF24 object. CE, CSN
 
@@ -76,12 +76,12 @@ void Penyx::begin() {
     radio.printDetails();
   }
 */
- /* lcd.begin(0x27, 16, 2);
+  lcd.begin(0x27, 16, 2);
   lcd.backlight();
   lcd.setCursor(5,0);
   lcd.print("PenYX");
   lcd.setCursor(3,1);
-  lcd.print("Initiated");*/
+  lcd.print("Initiated");
   
 
 }
@@ -153,14 +153,14 @@ void Penyx::dxdy(int x, int y, bool pen) { //steps to each side, pen up = False
   Serial.print(xlocation);
   Serial.print("  |  ylocation =");
   Serial.println(ylocation);
-  /*lcd.clear();
+  lcd.clear();
   lcd.print(" X  |  Y  | PEN");
   lcd.setCursor(0, 1);
   lcd.print("    |     |    ");
   lcd.setCursor(0, 1);
   lcd.print(xlocation);
   lcd.setCursor(6, 1);
-  lcd.print(ylocation);*/
+  lcd.print(ylocation);
   if (pen) {
     pendown();
   }
@@ -233,14 +233,14 @@ void Penyx::absxy(int x, int y, bool pen) { //setpoint to grid location X, Y. pe
   Serial.print(xlocation);
   Serial.print("  |  ylocation =");
   Serial.println(ylocation);
- /* lcd.clear();
+  lcd.clear();
   lcd.print(" X  |  Y  | PEN");
   lcd.setCursor(0, 1);
   lcd.print("    |     |    ");
   lcd.setCursor(0, 1);
   lcd.print(xlocation);
   lcd.setCursor(6, 1);
-  lcd.print(ylocation);*/
+  lcd.print(ylocation);
   if (pen) {
     pendown();
   }
@@ -253,22 +253,22 @@ void Penyx::absxy(int x, int y, bool pen) { //setpoint to grid location X, Y. pe
 
 void Penyx::pendown () {
    Serial.println("Pen Down");
-  // lcd.setCursor(11, 1);
-   //lcd.print("DRAW!"); 
+   lcd.setCursor(11, 1);
+   lcd.print("DRAW!"); 
    myservo.write(150);    
    }
 
 void Penyx::penup () {
    Serial.println("Pen Up");
-   //lcd.setCursor(12, 1);
-   //lcd.print("OFF "); 
+   lcd.setCursor(12, 1);
+   lcd.print("OFF "); 
    myservo.write(10);    
 
   }
 void Penyx::display(const char* dispmessage){
-  /*lcd.clear();
+  lcd.clear();
   lcd.backlight();
-  lcd.printstr(dispmessage); */
+  lcd.printstr(dispmessage); 
   delay(500);
 }
 int Penyx::locx(){
