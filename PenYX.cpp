@@ -1,5 +1,5 @@
 /* cpp code for PenYX library
-v2.1.2
+v2.2.1
 
 speed sets the motors control pulses width in uS. typ 300-4000.
 the Radio is connected to Default SPI Pins: CLK, MOSI, MISO = 13, 11, 12
@@ -29,11 +29,13 @@ by gal arbel
  #include <nRF24L01.h>
  #include <RF24.h>
  #include <Servo.h>
-const int stepXPin = 4; 
+const int stepXPin = 2; 
 const int stepYPin = 3; 
-const int dirXPin = 7; 
-const int dirYPin = 6;  
-const int servoPin = 10;  
+const int dirXPin = 5; 
+const int dirYPin = 6; 
+const int ylimPin = 10; 
+const int xlimPin = 9; 
+const int servoPin = 11;  
 
 int xlocation = 0;
 int ylocation = 0;
@@ -44,7 +46,7 @@ char* dispmessage = ""; // to display on LCD
 
 LiquidCrystal_I2C lcd(0x27, 16, 2); // on 0x27 i2c address, 16 by 2
 Servo myservo;  
-RF24 radio(8, 9);  // create an RF24 object. CE, CSN
+RF24 radio(12, 13);  // create an RF24 object. CE, CSN
 
 
 Penyx::Penyx(int speed) {
@@ -58,6 +60,9 @@ void Penyx::begin() {
   pinMode(dirYPin,OUTPUT);
   pinMode(stepXPin,OUTPUT); 
   pinMode(dirXPin,OUTPUT);
+  pinMode(ylimPin,INPUT_PULLUP); 
+  pinMode(xlimPin,INPUT_PULLUP);
+
   //Wire.begin(); // i2c on default SCL, SDA pins: 28, 27  starts auto on defauls by LiquidCrystal_I2C.
   myservo.attach(servoPin);  // attaches the servo to the pin
   Serial.println("Receiver Srarted");
@@ -76,6 +81,7 @@ void Penyx::begin() {
     radio.printDetails();
   }
 */
+  lcd.init();  
   lcd.begin(0x27, 16, 2);
   lcd.backlight();
   lcd.setCursor(5,0);
@@ -98,7 +104,7 @@ void Penyx::dxdy(int x, int y, bool pen) { //steps to each side, pen up = False
   Serial.println(pen);
   
  if (y > 0) { //new delta setpoint
-   digitalWrite(dirYPin,HIGH); // go CW. Makes 200 pulses for one revolution
+   digitalWrite(dirYPin,LOW); // go CW. Makes 200 pulses for one revolution
    //Stepper has 1.8deg step angle -> 360/1.8=200
    //Stepper in Full steps
    for (int c = 0; c < y; c++){
@@ -107,23 +113,31 @@ void Penyx::dxdy(int x, int y, bool pen) { //steps to each side, pen up = False
     digitalWrite(stepYPin,LOW);  
     delayMicroseconds(speed); 
     ylocation++;
+
+     if (!digitalRead(ylimPin)) {
+       Serial.println("limit Y reached"); 
+       break;
+       }
    } 
  }
   if (y < 0){
-    digitalWrite(dirYPin,LOW); // go CCW
+    digitalWrite(dirYPin,HIGH); // go CCW
     for(int c = 0; c < abs(y) ; c++) {
      digitalWrite(stepYPin,HIGH);
      delayMicroseconds(speed);
      digitalWrite(stepYPin,LOW);
      delayMicroseconds(speed);    
      ylocation--;
+
+     if (!digitalRead(ylimPin)) {
+       Serial.println("limit Y reached"); 
+       break;
+       }
      }    
   }
 
   if (x > 0){
    digitalWrite(dirXPin,HIGH); // go CW. Makes 200 pulses for making one full cycle rotation
-    Serial.println("dx ++");
-
    for (int c = 0; c < x; c++){
     digitalWrite(stepXPin,HIGH); 
     delayMicroseconds(speed); 
@@ -131,12 +145,14 @@ void Penyx::dxdy(int x, int y, bool pen) { //steps to each side, pen up = False
     delayMicroseconds(speed); 
     xlocation++;
    // Serial.println(xlocation);
+    if (!xlimPin) {
+       Serial.println("limit X reached"); 
+       break;
+       }
    }
  }
    if (x < 0){
     digitalWrite(dirXPin,LOW); // go CCW
-        Serial.println("dx --");
-
     for(int c = 0; c < abs(x) ; c++) {
      digitalWrite(stepXPin,HIGH);
      delayMicroseconds(speed);
@@ -144,6 +160,11 @@ void Penyx::dxdy(int x, int y, bool pen) { //steps to each side, pen up = False
      delayMicroseconds(speed);    
      xlocation--;  
    //  Serial.println(xlocation);
+
+    if (!xlimPin) {
+       Serial.println("limit X reached"); 
+       break;
+       }
   }
  }
  
@@ -182,7 +203,7 @@ void Penyx::absxy(int x, int y, bool pen) { //setpoint to grid location X, Y. pe
   Serial.println(pen);
   
  if (y > ylocation) { //new setpoint
-   digitalWrite(dirYPin,HIGH); // go CW. Makes 200 pulses for making one full cycle rotation
+   digitalWrite(dirYPin,LOW); // go CW. Makes 200 pulses for making one full cycle rotation
    //Stepper has 1.8deg step angle -> 360/1.8=200
    for (int c = ylocation; c < y; c++){ // a loop to send pulses to the Stepper.
     digitalWrite(stepYPin,HIGH); 
@@ -190,10 +211,14 @@ void Penyx::absxy(int x, int y, bool pen) { //setpoint to grid location X, Y. pe
     digitalWrite(stepYPin,LOW);  
     delayMicroseconds(speed); 
     ylocation++;
+    if (!digitalRead(ylimPin)) {
+       Serial.println("limit Y reached"); 
+       break;
+       }
    } 
  }
  else if (y < ylocation){
-    digitalWrite(dirYPin,LOW); // go CCW
+    digitalWrite(dirYPin,HIGH); // go CCW
     int tempy = ylocation;    
     for(int c = y; c < tempy; c++) {
      digitalWrite(stepYPin,HIGH);
@@ -201,6 +226,10 @@ void Penyx::absxy(int x, int y, bool pen) { //setpoint to grid location X, Y. pe
      digitalWrite(stepYPin,LOW);
      delayMicroseconds(speed);    
      ylocation--;
+     if (!digitalRead(ylimPin)) {
+       Serial.println("limit Y reached"); 
+       break;
+       }
      }    
   }
   if (x > xlocation){
@@ -211,6 +240,10 @@ void Penyx::absxy(int x, int y, bool pen) { //setpoint to grid location X, Y. pe
     digitalWrite(stepXPin,LOW);  
     delayMicroseconds(speed); 
     xlocation++;
+    if (!digitalRead(xlimPin)) {
+       Serial.println("limit Y reached"); 
+       break;
+       }
    // Serial.println(xlocation);
    }
  }
@@ -223,6 +256,10 @@ void Penyx::absxy(int x, int y, bool pen) { //setpoint to grid location X, Y. pe
      digitalWrite(stepXPin,LOW);
      delayMicroseconds(speed);    
      xlocation--;  
+     if (!digitalRead(xlimPin)) {
+       Serial.println("limit Y reached"); 
+       break;
+       }
    //  Serial.println(xlocation);
   }
  }
@@ -233,7 +270,6 @@ void Penyx::absxy(int x, int y, bool pen) { //setpoint to grid location X, Y. pe
   Serial.print(xlocation);
   Serial.print("  |  ylocation =");
   Serial.println(ylocation);
-  lcd.clear();
   lcd.print(" X  |  Y  | PEN");
   lcd.setCursor(0, 1);
   lcd.print("    |     |    ");
@@ -255,14 +291,14 @@ void Penyx::pendown () {
    Serial.println("Pen Down");
    lcd.setCursor(11, 1);
    lcd.print("DRAW!"); 
-   myservo.write(150);    
+   myservo.write(30);    
    }
 
 void Penyx::penup () {
    Serial.println("Pen Up");
    lcd.setCursor(12, 1);
    lcd.print("OFF "); 
-   myservo.write(10);    
+   myservo.write(0);    
 
   }
 void Penyx::display(const char* dispmessage){
