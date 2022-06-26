@@ -1,7 +1,7 @@
 /* cpp code for PenYX library
-v2.2.1
+v2.2.3
 
-speed sets the motors control pulses width in uS. typ 300-4000.
+speed sets the motors control pulses width in uS. typ 700 (fast) - 1700 (slow).
 the Radio is connected to Default SPI Pins: CLK, MOSI, MISO = 13, 11, 12
 and  CE, CSN = 8, 9
 and Default I2C pins : SCL, SDA = 28, 27 
@@ -16,6 +16,9 @@ pin 13 = SpnDir
 
 Radio control: the buttons are used as "pen down"
 
+nema 17 Stepper has 1.8deg step angle -> 360/1.8=200
+Stepper in Full steps
+
 by gal arbel
 2022
 */
@@ -29,20 +32,20 @@ by gal arbel
  #include <nRF24L01.h>
  #include <RF24.h>
  #include <Servo.h>
-const int stepXPin = 2; 
-const int stepYPin = 3; 
-const int dirXPin = 5; 
-const int dirYPin = 6; 
-const int ylimPin = 10; 
-const int xlimPin = 9; 
-const int servoPin = 11;  
+static const int stepXPin = 2; 
+static const int stepYPin = 3; 
+static const int dirXPin = 5; 
+static const int dirYPin = 6; 
+static const int ylimPin = 10; 
+static const int xlimPin = 9; 
+static const int servoPin = 11;  
 
-int xlocation = 0;
-int ylocation = 0;
-int pos = 0;    // stores the servo position
-const byte address[6] = "00001"; //for radio
-int control[4]; // radio message. x, y, btn1, btn2
-char* dispmessage = ""; // to display on LCD
+static int xlocation = 0;
+static int ylocation = 0;
+static int pos = 0;    // stores the servo position
+static const byte address[6] = "00001"; //for radio
+static int control[4]; // radio message. x, y, btn1, btn2
+static char* dispmessage = ""; // to display on LCD
 
 LiquidCrystal_I2C lcd(0x27, 16, 2); // on 0x27 i2c address, 16 by 2
 Servo myservo;  
@@ -63,8 +66,7 @@ void Penyx::begin() {
   pinMode(ylimPin,INPUT_PULLUP); 
   pinMode(xlimPin,INPUT_PULLUP);
 
-  //Wire.begin(); // i2c on default SCL, SDA pins: 28, 27  starts auto on defauls by LiquidCrystal_I2C.
-  myservo.attach(servoPin);  // attaches the servo to the pin
+  myservo.attach(servoPin);  
   Serial.println("Receiver Srarted");
   
   /*
@@ -84,29 +86,24 @@ void Penyx::begin() {
   lcd.init();  
   lcd.begin(0x27, 16, 2);
   lcd.backlight();
-  lcd.setCursor(5,0);
-  lcd.print("PenYX");
-  lcd.setCursor(3,1);
-  lcd.print("Initiated");
+  lcd.setCursor(0,0);
+  lcd.print("PenYX Initiated!");
+  lcd.setCursor(1,1);
+  lcd.print("By: Gal Arbel");
   
-
 }
 
 
-void Penyx::dxdy(int x, int y, bool pen) { //steps to each side, pen up = False
- 
+void Penyx::movedxdy(int x, int y) { //steps to each side
   Serial.println("dxdy activated");
   Serial.print("Delta X =");
   Serial.print(x);
   Serial.print("  |  Delta Y =");
-  Serial.print(y);
-  Serial.print("  |  pen  =");
-  Serial.println(pen);
-  
+  Serial.println(y);
+   
  if (y > 0) { //new delta setpoint
-   digitalWrite(dirYPin,LOW); // go CW. Makes 200 pulses for one revolution
-   //Stepper has 1.8deg step angle -> 360/1.8=200
-   //Stepper in Full steps
+   digitalWrite(dirYPin,HIGH); // go CW. Makes 200 pulses for one revolution
+   
    for (int c = 0; c < y; c++){
     digitalWrite(stepYPin,HIGH); 
     delayMicroseconds(speed); 
@@ -115,13 +112,14 @@ void Penyx::dxdy(int x, int y, bool pen) { //steps to each side, pen up = False
     ylocation++;
 
      if (!digitalRead(ylimPin)) {
+       movefromedge('y', 'd');
        Serial.println("limit Y reached"); 
        break;
        }
    } 
  }
   if (y < 0){
-    digitalWrite(dirYPin,HIGH); // go CCW
+    digitalWrite(dirYPin,LOW); // go CCW
     for(int c = 0; c < abs(y) ; c++) {
      digitalWrite(stepYPin,HIGH);
      delayMicroseconds(speed);
@@ -131,6 +129,7 @@ void Penyx::dxdy(int x, int y, bool pen) { //steps to each side, pen up = False
 
      if (!digitalRead(ylimPin)) {
        Serial.println("limit Y reached"); 
+       movefromedge('y', 'u');
        break;
        }
      }    
@@ -144,10 +143,10 @@ void Penyx::dxdy(int x, int y, bool pen) { //steps to each side, pen up = False
     digitalWrite(stepXPin,LOW);  
     delayMicroseconds(speed); 
     xlocation++;
-   // Serial.println(xlocation);
-    if (!xlimPin) {
+    if (!digitalRead(xlimPin)) {
        Serial.println("limit X reached"); 
-       break;
+       movefromedge('x', 'l'); 
+        break;
        }
    }
  }
@@ -159,11 +158,10 @@ void Penyx::dxdy(int x, int y, bool pen) { //steps to each side, pen up = False
      digitalWrite(stepXPin,LOW);
      delayMicroseconds(speed);    
      xlocation--;  
-   //  Serial.println(xlocation);
-
-    if (!xlimPin) {
+     if (!digitalRead(xlimPin)) {
        Serial.println("limit X reached"); 
-       break;
+       movefromedge('x', 'r'); 
+        break;
        }
   }
  }
@@ -181,90 +179,19 @@ void Penyx::dxdy(int x, int y, bool pen) { //steps to each side, pen up = False
   lcd.setCursor(0, 1);
   lcd.print(xlocation);
   lcd.setCursor(6, 1);
-  lcd.print(ylocation);
-  if (pen) {
-    pendown();
-  }
-  if (!pen) {
-   penup();
-  }
-  delay(1000);
-   
+  lcd.print(ylocation);  
 }
 
-void Penyx::absxy(int x, int y, bool pen) { //setpoint to grid location X, Y. pen up = False
- 
-  Serial.println("gotogrid activated!");
+void Penyx::moveabsxy(int x, int y) { //setpoint to grid location X, Y. pen up = False
+  Serial.println("goto grid activated!");
   Serial.print("Absolute X =");
   Serial.print(x);
   Serial.print("     Absolute Y =");
-  Serial.print(y);
-  Serial.print("     pen  =");
-  Serial.println(pen);
-  
- if (y > ylocation) { //new setpoint
-   digitalWrite(dirYPin,LOW); // go CW. Makes 200 pulses for making one full cycle rotation
-   //Stepper has 1.8deg step angle -> 360/1.8=200
-   for (int c = ylocation; c < y; c++){ // a loop to send pulses to the Stepper.
-    digitalWrite(stepYPin,HIGH); 
-    delayMicroseconds(speed); 
-    digitalWrite(stepYPin,LOW);  
-    delayMicroseconds(speed); 
-    ylocation++;
-    if (!digitalRead(ylimPin)) {
-       Serial.println("limit Y reached"); 
-       break;
-       }
-   } 
- }
- else if (y < ylocation){
-    digitalWrite(dirYPin,HIGH); // go CCW
-    int tempy = ylocation;    
-    for(int c = y; c < tempy; c++) {
-     digitalWrite(stepYPin,HIGH);
-     delayMicroseconds(speed);
-     digitalWrite(stepYPin,LOW);
-     delayMicroseconds(speed);    
-     ylocation--;
-     if (!digitalRead(ylimPin)) {
-       Serial.println("limit Y reached"); 
-       break;
-       }
-     }    
-  }
-  if (x > xlocation){
-   digitalWrite(dirXPin,HIGH); // go CW. Makes 200 pulses for making one full cycle rotation
-   for (int c = xlocation; c < x; c++){
-    digitalWrite(stepXPin,HIGH); 
-    delayMicroseconds(speed); 
-    digitalWrite(stepXPin,LOW);  
-    delayMicroseconds(speed); 
-    xlocation++;
-    if (!digitalRead(xlimPin)) {
-       Serial.println("limit Y reached"); 
-       break;
-       }
-   // Serial.println(xlocation);
-   }
- }
-  else if (x < xlocation){
-    digitalWrite(dirXPin,LOW); // go CCW
-    int tempx = xlocation;
-    for(int c = x; c < tempx ; c++) {
-     digitalWrite(stepXPin,HIGH);
-     delayMicroseconds(speed);
-     digitalWrite(stepXPin,LOW);
-     delayMicroseconds(speed);    
-     xlocation--;  
-     if (!digitalRead(xlimPin)) {
-       Serial.println("limit Y reached"); 
-       break;
-       }
-   //  Serial.println(xlocation);
-  }
- }
+  Serial.println(y);
+  int modx = x - xlocation;
+  int mody = y-ylocation;
+  movedxdy(modx, mody);
  
-  delay(1000);
   Serial.println("- - - - Updated Location details- - - - ");
   Serial.print("xlocation =");
   Serial.print(xlocation);
@@ -277,30 +204,28 @@ void Penyx::absxy(int x, int y, bool pen) { //setpoint to grid location X, Y. pe
   lcd.print(xlocation);
   lcd.setCursor(6, 1);
   lcd.print(ylocation);
-  if (pen) {
-    pendown();
-  }
-  if (!pen) {
-   penup();
-  }
-  delay(1000);
-   
+     
 }
 
 void Penyx::pendown () {
    Serial.println("Pen Down");
    lcd.setCursor(11, 1);
    lcd.print("DRAW!"); 
-   myservo.write(30);    
+   myservo.write(100);    
    }
 
 void Penyx::penup () {
    Serial.println("Pen Up");
    lcd.setCursor(12, 1);
    lcd.print("OFF "); 
-   myservo.write(0);    
-
+   myservo.write(120);    
   }
+
+void Penyx::penang (int ang) {
+   Serial.println("angle chosen");
+   myservo.write(ang);    
+  }
+
 void Penyx::display(const char* dispmessage){
   lcd.clear();
   lcd.backlight();
@@ -329,7 +254,47 @@ void Penyx::checkradio() {
     Serial.print(control[2]);  
     Serial.print("  ");    
     Serial.println(control[3]);  
-    absxy(control[0], control[1], control[2] or control[3]);
+    moveabsxy(control[0], control[1]);
   }
   else {Serial.println("no radio available");}  
 }     
+void Penyx::movefromedge(char axis, char direction) {
+ if (axis == 'y') {
+   if (direction == 'u'){
+    digitalWrite(dirYPin,HIGH); // go CW. Makes 200 pulses for one revolution
+    ylocation+35;
+    Serial.println("hitting upper edge!");
+   }
+   if (direction == 'd'){
+    digitalWrite(dirYPin,LOW); // go CCW. Makes 200 pulses for one revolution
+    ylocation-35;
+    Serial.println("hitting lower edge!");
+
+   }
+   for (int c = 0; c < 35; c++){// measured value to move from edge
+    digitalWrite(stepYPin,HIGH); 
+    delayMicroseconds(1500); //slowing down
+    digitalWrite(stepYPin,LOW);  
+    delayMicroseconds(1500); 
+   } 
+ }
+ if (axis == 'x') {
+   if (direction == 'l'){
+    digitalWrite(dirXPin,LOW); 
+    xlocation-35;
+    Serial.println("hitting right edge!");
+   }
+   if (direction == 'r'){
+    digitalWrite(dirXPin,HIGH); 
+    xlocation+35;
+    Serial.println("hitting left edge!");
+
+   }
+   for (int c = 0; c < 35; c++){// measured value to move from edge
+    digitalWrite(stepXPin,HIGH); 
+    delayMicroseconds(1500); 
+    digitalWrite(stepXPin,LOW);  
+    delayMicroseconds(1500); 
+   } 
+ }
+}
