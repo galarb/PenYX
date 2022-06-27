@@ -166,12 +166,11 @@ void Penyx::movedxdy(int x, int y) { //steps to each side
   }
  }
  
-  delay(1000);
-  Serial.println("- - - - Updated Location details- - - - ");
+/*  Serial.println("- - - - Updated Location details- - - - ");
   Serial.print("xlocation =");
   Serial.print(xlocation);
   Serial.print("  |  ylocation =");
-  Serial.println(ylocation);
+  Serial.println(ylocation);*/
   lcd.clear();
   lcd.print(" X  |  Y  | PEN");
   lcd.setCursor(0, 1);
