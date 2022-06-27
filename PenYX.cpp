@@ -13,7 +13,10 @@ pin 10 = Y- = Y+
 pin 11 = Z+ = Z-
 pin 12 = SpnEn
 pin 13 = SpnDir
-
+A0 = Abort 
+A1 = Hold 
+A2 = Resume 
+A3 = CoolEn 
 Radio control: the buttons are used as "pen down"
 
 nema 17 Stepper has 1.8deg step angle -> 360/1.8=200
@@ -207,6 +210,12 @@ void Penyx::moveabsxy(int x, int y) { //setpoint to grid location X, Y. pen up =
   lcd.setCursor(6, 1);
   lcd.print(ylocation);
      
+}
+
+void Penyx::movedxdymm(int x, int y) {
+   x = x / 0.157; // the resolution at full steps
+   y = y / 0.157;
+   movedxdy(x, y);
 }
 
 void Penyx::pendown () {
