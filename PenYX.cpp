@@ -262,12 +262,12 @@ void Penyx::movefromedge(char axis, char direction) {
  if (axis == 'y') {
    if (direction == 'u'){
     digitalWrite(dirYPin,HIGH); // go CW. Makes 200 pulses for one revolution
-    ylocation+35;
+    ylocation =+ 35;
     Serial.println("hitting upper edge!");
    }
    if (direction == 'd'){
     digitalWrite(dirYPin,LOW); // go CCW. Makes 200 pulses for one revolution
-    ylocation-35;
+    ylocation =- 35;
     Serial.println("hitting lower edge!");
 
    }
@@ -281,12 +281,12 @@ void Penyx::movefromedge(char axis, char direction) {
  if (axis == 'x') {
    if (direction == 'l'){
     digitalWrite(dirXPin,LOW); 
-    xlocation-35;
+    xlocation =- 35;
     Serial.println("hitting right edge!");
    }
    if (direction == 'r'){
     digitalWrite(dirXPin,HIGH); 
-    xlocation+35;
+    xlocation =+ 35;
     Serial.println("hitting left edge!");
 
    }

@@ -4,7 +4,7 @@
  class Penyx {
   
   private:
-    int speed = 500;
+    int speed = 700;
     void movefromedge(char axis, char direction);
     
   public:
