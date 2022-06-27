@@ -83,14 +83,17 @@ void Penyx::begin() {
     radio.printDetails();
   }
 */
+  movedxdy(-3000,-4000);//reset Penyx position
+  xlocation = 0;
+  ylocation = 0;
+  
   lcd.init();  
   lcd.begin(0x27, 16, 2);
   lcd.backlight();
   lcd.setCursor(0,0);
   lcd.print("PenYX Initiated!");
   lcd.setCursor(1,1);
-  lcd.print("By: Gal Arbel");
-  
+  lcd.print("ready.......");
 }
 
 
