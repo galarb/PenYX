@@ -1,6 +1,6 @@
 /* cpp code for PenYX library
 v2.2.3
-
+EDITED WITH ODED
 speed sets the motors control pulses width in uS. typ 700 (fast) - 1700 (slow).
 the Radio is connected to Default SPI Pins: CLK, MOSI, MISO = 13, 11, 12
 and  CE, CSN = 8, 9
