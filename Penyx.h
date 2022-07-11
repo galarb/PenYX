@@ -1,6 +1,6 @@
 #ifndef PENYX_H
 #define PENYX_H
-//EDITED WITH ODED
+
  class Penyx {
   
   private:
@@ -16,10 +16,10 @@
     void display(const char*); // print to Penyx lcd
     int locx(); // returns the current X location
     int locy(); // returns the current Y location
-    void checkradio(); //periodically checks the radio buffer, and executed the location command if any
     void penup(); //manual pen operation
     void pendown();  
     void penang(int ang); //move the servo to desired
+    void keypad();
  };
 
 #endif 
