@@ -1,11 +1,11 @@
 /* cpp code for PenYX library
-v2.2.3
-EDITED WITH ODED
-speed sets the motors control pulses width in uS. typ 700 (fast) - 1700 (slow).
-the Radio is connected to Default SPI Pins: CLK, MOSI, MISO = 13, 11, 12
-and  CE, CSN = 8, 9
-and Default I2C pins : SCL, SDA = 28, 27 
+v2.3.1
 
+speed sets the motors control pulses width in uS. typ 700 (fast) - 1700 (slow).
+
+using Default I2C pins : SCL, SDA = 28, 27 
+
+The static pin assignmenet is compatible with the CNC Shield 
 Using the CNC Shield:
 pin 8 = En (below the reset button) must be jumped to GND
 pin 9 = X- = X+
@@ -35,6 +35,8 @@ by gal arbel
  #include <nRF24L01.h>
  #include <RF24.h>
  #include <Servo.h>
+ #include "Adafruit_MPR121.h"
+ 
 static const int stepXPin = 2; 
 static const int stepYPin = 3; 
 static const int dirXPin = 5; 
@@ -46,13 +48,11 @@ static const int servoPin = 11;
 static int xlocation = 0;
 static int ylocation = 0;
 static int pos = 0;    // stores the servo position
-static const byte address[6] = "00001"; //for radio
-static int control[4]; // radio message. x, y, btn1, btn2
 static char* dispmessage = ""; // to display on LCD
-
+static uint16_t key = 5; //reset value for keypad
 LiquidCrystal_I2C lcd(0x27, 16, 2); // on 0x27 i2c address, 16 by 2
 Servo myservo;  
-RF24 radio(12, 13);  // create an RF24 object. CE, CSN
+Adafruit_MPR121 cap = Adafruit_MPR121();
 
 
 Penyx::Penyx(int speed) {
@@ -70,23 +70,7 @@ void Penyx::begin() {
   pinMode(xlimPin,INPUT_PULLUP);
 
   myservo.attach(servoPin);  
-  Serial.println("Receiver Srarted");
   
-  /*
-  if (!radio.begin()) {
-   Serial.println(F("radio hardware not responding!"));
-   //while (1) {} // hold program in infinite loop to prevent subsequent errors
-   
-   }
-  else {
-    radio.setPALevel(RF24_PA_MIN);
-    radio.openReadingPipe(0, address);
-    radio.startListening();
-    Serial.println("Radio Details:");
-    radio.printDetails();
-  }
-*/
-  movedxdy(-3000,-4000);//reset Penyx position
   xlocation = 0;
   ylocation = 0;
   
@@ -97,8 +81,40 @@ void Penyx::begin() {
   lcd.print("PenYX Initiated!");
   lcd.setCursor(1,1);
   lcd.print("ready.......");
+  if (!cap.begin(0x5A)) {
+    Serial.println("MPR121 not found");
+  }
+  else {Serial.println("MPR121 found!");}
 }
+void Penyx::keypad(){
+  // Get the currently touched pads
+  key = cap.touched();
+  Serial.println(key);
 
+  switch (key) {
+       case 4095: //move left
+        movedxdymm(-10,0);  
+        Serial.println("Keypad command!");
+        break;
+       case 2048: //move up
+        movedxdymm(0,-10);  
+        Serial.println("Keypad command!");
+        break;
+       case 1024: //move right
+        movedxdymm(10,0); 
+        Serial.println("Keypad command!"); 
+        break;
+       case 256: //move down
+        movedxdymm(0,10);  
+        Serial.println("Keypad command!");
+        break;
+
+  }
+
+  // reset our state
+  key = 5; //number 0 was taken by the hardware.
+ 
+}
 
 void Penyx::movedxdy(int x, int y) { //steps to each side
   Serial.println("dxdy activated");
@@ -252,23 +268,6 @@ int Penyx::locy(){
   return(y);
 }
 
-void Penyx::checkradio() {
-  
- // the data if available in buffer
- if (radio.available()) {   // If the NRF240L01 module received data
-    radio.read(&control, sizeof(control));
-    Serial.print("control[]=");
-    Serial.print(control[0]);
-    Serial.print("  ");
-    Serial.print(control[1]);
-    Serial.print("  ");    
-    Serial.print(control[2]);  
-    Serial.print("  ");    
-    Serial.println(control[3]);  
-    moveabsxy(control[0], control[1]);
-  }
-  else {Serial.println("no radio available");}  
-}     
 void Penyx::movefromedge(char axis, char direction) {
  if (axis == 'y') {
    if (direction == 'u'){
