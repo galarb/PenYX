@@ -49,7 +49,7 @@ static int xlocation = 0;
 static int ylocation = 0;
 static int pos = 0;    // stores the servo position
 static char* dispmessage = ""; // to display on LCD
-static uint16_t key = 5; //reset value for keypad
+static uint16_t key = 0; //reset value for keypad
 LiquidCrystal_I2C lcd(0x27, 16, 2); // on 0x27 i2c address, 16 by 2
 Servo myservo;  
 Adafruit_MPR121 cap = Adafruit_MPR121();
@@ -89,30 +89,26 @@ void Penyx::begin() {
 void Penyx::keypad(){
   // Get the currently touched pads
   key = cap.touched();
-  Serial.println(key);
+ // Serial.println(key);
 
   switch (key) {
-       case 4095: //move left
-        movedxdymm(-10,0);  
-        Serial.println("Keypad command!");
+       case 1: //move left
+        movedxdy(-1,0);  
         break;
-       case 2048: //move up
-        movedxdymm(0,-10);  
-        Serial.println("Keypad command!");
+       case 2: //move up
+        movedxdy(0,-1);  
         break;
-       case 1024: //move right
-        movedxdymm(10,0); 
-        Serial.println("Keypad command!"); 
+       case 4: //move right
+        movedxdy(1,0); 
         break;
-       case 256: //move down
-        movedxdymm(0,10);  
-        Serial.println("Keypad command!");
+       case 8: //move down
+        movedxdy(0,1);  
         break;
 
   }
 
   // reset our state
-  key = 5; //number 0 was taken by the hardware.
+  key = 0; 
  
 }
 
